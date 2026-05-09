@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="การเงิน">
+<meta name="theme-color" content="#ffffff">
+<title>จัดการการเงิน</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#f2f2f7;font-family:-apple-system,'Helvetica Neue',sans-serif;font-size:15px;color:#1c1c1e;-webkit-font-smoothing:antialiased}
+.shell{display:flex;flex-direction:column;width:100%;height:100%;background:#f2f2f7}
+.statusbar{height:env(safe-area-inset-top,44px);background:#fff;flex-shrink:0}
+.navbar{background:#fff;border-bottom:0.5px solid rgba(0,0,0,.12);padding:12px 16px 0;flex-shrink:0}
+.navbar-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.navbar-title{font-size:17px;font-weight:700;color:#1c1c1e}
+.month-pill{font-size:12px;color:#636366;background:#f2f2f7;padding:4px 10px;border-radius:20px}
+.save-ind{font-size:12px;color:#34C759;display:none;align-items:center;gap:4px;font-weight:500}
+.tabbar{display:flex;border-top:0.5px solid rgba(0,0,0,.08)}
+.tb{flex:1;padding:8px 2px 10px;border:none;background:transparent;font-size:10px;color:#8e8e93;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;border-bottom:2px solid transparent}
+.tbi{font-size:22px;line-height:1}
+.tb.active{color:#007AFF;border-bottom-color:#007AFF;font-weight:600}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px calc(env(safe-area-inset-bottom,16px) + 12px)}
+.page{display:none;flex-direction:column;gap:10px}
+.page.active{display:flex}
+.card{background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.sec-t{font-size:11px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.sg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.sl{font-size:11px;color:#8e8e93;margin-bottom:4px;font-weight:500}
+.sv{font-size:20px;font-weight:700;color:#1c1c1e;letter-spacing:-.5px}
+.sv.red{color:#FF3B30}.sv.grn{color:#34C759}.sv.orn{color:#FF9500}.sv.blue{color:#007AFF}
+.net-hero{text-align:center;padding:16px 0 10px}
+.net-label{font-size:12px;color:#8e8e93;margin-bottom:6px;font-weight:500}
+.net-amount{font-size:34px;font-weight:700;letter-spacing:-1px}
+.net-sub{font-size:12px;color:#8e8e93;margin-top:4px}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid rgba(0,0,0,.08)}
+.row:last-child{border-bottom:none}
+.ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.rinfo{flex:1;min-width:0}
+.rname{font-size:14px;font-weight:600;color:#1c1c1e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rsub{font-size:12px;color:#8e8e93;margin-top:1px}
+.badge{font-size:10px;padding:2px 7px;border-radius:20px;display:inline-block;font-weight:600}
+.b-over{background:#FFE5E5;color:#C0392B}
+.b-soon{background:#FFF3CD;color:#B7770D}
+.b-ok{background:#E8F8EE;color:#1E7E34}
+.b-paid{background:#E8F8EE;color:#1E7E34}
+.rright{text-align:right;flex-shrink:0}
+.ramt{font-size:14px;font-weight:700;color:#1c1c1e}
+.rbtn{font-size:12px;padding:4px 10px;border:1px solid #e5e5ea;background:#f2f2f7;border-radius:20px;cursor:pointer;color:#636366;margin-top:3px;font-family:inherit}
+.rbtn.done{background:#E8F8EE;color:#34C759;border-color:#b7f5cc}
+.add-btn{width:100%;padding:13px;border:1.5px dashed #c7c7cc;background:transparent;border-radius:12px;font-size:14px;color:#8e8e93;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
+.btn-pri{width:100%;padding:14px;background:#007AFF;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-pri:active{background:#0062cc}
+.btn-pri:disabled{background:#a0c4f8;cursor:not-allowed}
+.btn-sec{width:100%;padding:13px;background:#f2f2f7;border:none;border-radius:12px;font-size:14px;color:#636366;cursor:pointer;margin-top:8px;font-family:inherit}
+.form-wrap{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fl{font-size:13px;color:#8e8e93;font-weight:500}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=text],input[type=number],select{width:100%;padding:10px 12px;border:1px solid #e5e5ea;border-radius:10px;font-size:14px;font-family:inherit;color:#1c1c1e;background:#fff;appearance:none;-webkit-appearance:none}
+input:focus,select:focus{outline:none;border-color:#007AFF;box-shadow:0 0 0 3px rgba(0,122,255,.15)}
+.acc-card{border-bottom:0.5px solid rgba(0,0,0,.08);padding:12px 0}
+.acc-card:last-child{border-bottom:none}
+.acc-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.acc-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.acc-bal{font-size:22px;font-weight:700;color:#007AFF;margin-bottom:2px;letter-spacing:-.5px}
+.acc-actions{display:flex;gap:8px;margin-top:8px}
+.acc-btn{flex:1;padding:7px;border:1px solid #e5e5ea;background:#f2f2f7;border-radius:10px;font-size:13px;cursor:pointer;color:#636366;font-family:inherit;text-align:center}
+.debt-row{display:grid;grid-template-columns:1fr 72px 56px 28px;gap:6px;align-items:center;margin-bottom:8px}
+.debt-row input{font-size:12px;padding:8px}
+.alert-box{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.5;font-weight:500}
+.a-warn{background:#FFF3CD;color:#B7770D}
+.a-danger{background:#FFE5E5;color:#C0392B}
+.a-info{background:#E6F3FF;color:#0056b3}
+.a-success{background:#E8F8EE;color:#1E7E34}
+.pbar{height:4px;background:#e5e5ea;border-radius:4px;overflow:hidden;margin-top:6px}
+.pfill{height:100%;border-radius:4px}
+.stabs{display:flex;gap:8px;margin-bottom:12px}
+.stab{flex:1;padding:10px 4px;border:1px solid #e5e5ea;background:#f2f2f7;border-radius:10px;font-size:12px;cursor:pointer;color:#8e8e93;text-align:center;line-height:1.4;font-family:inherit}
+.stab.active{background:#007AFF;color:#fff;font-weight:600;border-color:#007AFF}
+.plan-order{border-bottom:0.5px solid rgba(0,0,0,.08);padding:10px 0}
+.plan-order:last-child{border-bottom:none}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid #e5e5ea;border-top-color:#007AFF;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Config overlay ── */
+.config-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;z-index:100}
+.config-sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;padding-bottom:calc(env(safe-area-inset-bottom,16px) + 20px)}
+.config-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.config-sub{font-size:13px;color:#8e8e93;margin-bottom:16px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<!-- Config overlay — ใส่ URL Apps Script ครั้งแรก -->
+<div class="config-overlay" id="config-overlay">
+  <div class="config-sheet">
+    <div class="config-title">⚙️ ตั้งค่าครั้งแรก</div>
+    <div class="config-sub">วาง URL ของ Google Apps Script Web App<br>(Deploy → New deployment → Web app → Copy URL)</div>
+    <div class="fg"><label class="fl">Apps Script URL</label>
+      <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <button class="btn-pri" onclick="saveApiUrl()">เริ่มใช้งาน</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="statusbar"></div>
+  <div class="navbar">
+    <div class="navbar-row">
+      <div class="navbar-title">💰 การเงินของฉัน</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="save-ind" id="save-ind">✓ บันทึกแล้ว</span>
+        <span class="month-pill" id="month-lbl"></span>
+      </div>
+    </div>
+    <div class="tabbar">
+      <button class="tb active" onclick="goPage('overview',this)"><span class="tbi">🏠</span>ภาพรวม</button>
+      <button class="tb" onclick="goPage('accounts',this)"><span class="tbi">🏦</span>บัญชี</button>
+      <button class="tb" onclick="goPage('bills',this)"><span class="tbi">📄</span>บิล</button>
+      <button class="tb" onclick="goPage('debts',this)"><span class="tbi">💳</span>หนี้</button>
+      <button class="tb" onclick="goPage('plan',this)"><span class="tbi">📊</span>แผน</button>
+    </div>
+  </div>
+
+  <div class="content" id="main-content">
+
+    <div class="page active" id="page-overview">
+      <div class="card" id="loading-card" style="text-align:center;padding:32px;color:#8e8e93">
+        <span class="spin"></span>กำลังโหลด...
+      </div>
+      <div id="overview-content" style="display:none;flex-direction:column;gap:10px"></div>
+    </div>
+
+    <div class="page" id="page-accounts">
+      <div id="acc-form-wrap" style="display:none">
+        <div class="form-wrap">
+          <div class="sec-t" id="acc-form-title" style="margin-bottom:12px">เพิ่มบัญชี</div>
+          <div class="fg"><label class="fl">ชื่อบัญชี</label><input type="text" id="af-name" placeholder="เช่น บัญชีออมทรัพย์ KBank"></div>
+          <div class="frow">
+            <div class="fg"><label class="fl">ประเภท</label>
+              <select id="af-type">
+                <option value="savings">🏦 ออมทรัพย์</option>
+                <option value="current">💳 กระแสรายวัน</option>
+                <option value="fd">📈 ฝากประจำ</option>
+                <option value="cash">💵 เงินสด</option>
+                <option value="invest">📊 การลงทุน</option>
+              </select>
+            </div>
+            <div class="fg"><label class="fl">ยอดเงิน (฿)</label><input type="number" id="af-bal" placeholder="0" min="0"></div>
+          </div>
+          <div class="fg"><label class="fl">หมายเหตุ</label><input type="text" id="af-note" placeholder="เลขบัญชี ฯลฯ"></div>
+          <button class="btn-pri" id="acc-save-btn" onclick="saveAcc()">บันทึก</button>
+          <button class="btn-sec" onclick="closeAccForm()">ยกเลิก</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="sec-t" style="margin-bottom:0">บัญชีทั้งหมด</div>
+          <div style="font-size:15px;font-weight:700;color:#007AFF" id="acc-total-top">฿0</div>
+        </div>
+        <div id="acc-list"><span class="spin"></span>กำลังโหลด...</div>
+      </div>
+      <button class="add-btn" onclick="openAccForm()">+ เพิ่มบัญชีใหม่</button>
+    </div>
+
+    <div class="page" id="page-bills">
+      <div id="bill-form-wrap" style="display:none">
+        <div class="form-wrap">
+          <div class="sec-t" id="bill-form-title" style="margin-bottom:12px">เพิ่มบิล</div>
+          <div class="fg"><label class="fl">ชื่อรายการ</label><input type="text" id="bf-name" placeholder="เช่น ค่าไฟ"></div>
+          <div class="frow">
+            <div class="fg"><label class="fl">หมวดหมู่</label>
+              <select id="bf-cat">
+                <option value="💳">💳 บัตรเครดิต</option>
+                <option value="🏦">🏦 เงินกู้</option>
+                <option value="💧">💧 ค่าน้ำ</option>
+                <option value="⚡">⚡ ค่าไฟ</option>
+                <option value="📱">📱 โทรศัพท์</option>
+                <option value="🏠">🏠 ค่าเช่า</option>
+                <option value="📦">📦 อื่นๆ</option>
+              </select>
+            </div>
+            <div class="fg"><label class="fl">วันครบกำหนด</label><input type="number" id="bf-due" min="1" max="31" placeholder="1–31"></div>
+          </div>
+          <div class="frow">
+            <div class="fg"><label class="fl">ยอดเงิน (฿)</label><input type="number" id="bf-amt" placeholder="0" min="0"></div>
+            <div class="fg"><label class="fl">หมายเหตุ</label><input type="text" id="bf-note" placeholder="เพิ่มเติม"></div>
+          </div>
+          <button class="btn-pri" id="bill-save-btn" onclick="saveBill()">บันทึก</button>
+          <button class="btn-sec" onclick="closeBillForm()">ยกเลิก</button>
+        </div>
+      </div>
+      <div class="card"><div id="bills-list"><span class="spin"></span>กำลังโหลด...</div></div>
+      <button class="add-btn" onclick="openBillForm()">+ เพิ่มบิลใหม่</button>
+    </div>
+
+    <div class="page" id="page-debts">
+      <div class="card">
+        <div class="sec-t" style="margin-bottom:10px">รายการหนี้</div>
+        <div style="display:grid;grid-template-columns:1fr 72px 56px 28px;gap:6px;margin-bottom:6px">
+          <span style="font-size:10px;color:#8e8e93;font-weight:600">ชื่อหนี้</span>
+          <span style="font-size:10px;color:#8e8e93;font-weight:600">ยอดหนี้ ฿</span>
+          <span style="font-size:10px;color:#8e8e93;font-weight:600">ดบ.%/ปี</span>
+          <span></span>
+        </div>
+        <div id="debt-list"><span class="spin"></span>กำลังโหลด...</div>
+        <button class="add-btn" style="margin-top:8px" onclick="addDebt()">+ เพิ่มหนี้</button>
+      </div>
+      <div class="sg">
+        <div class="stat"><div class="sl">หนี้รวม</div><div class="sv red" id="dt-total">฿0</div></div>
+        <div class="stat"><div class="sl">ดอกเบี้ย/เดือน</div><div class="sv red" id="dt-int">฿0</div></div>
+      </div>
+      <button class="btn-pri" onclick="saveAllDebts()">💾 บันทึกหนี้ทั้งหมด</button>
+    </div>
+
+    <div class="page" id="page-plan">
+      <div class="card">
+        <div class="sec-t" style="margin-bottom:10px">กลยุทธ์ปลดหนี้</div>
+        <div class="stabs">
+          <button class="stab active" id="stab-av" onclick="setStrat('avalanche')">⚡ Avalanche<br><span style="font-size:10px;font-weight:400">ดอกเบี้ยสูงก่อน</span></button>
+          <button class="stab" id="stab-sn" onclick="setStrat('snowball')">❄️ Snowball<br><span style="font-size:10px;font-weight:400">ยอดน้อยก่อน</span></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <label style="font-size:13px;color:#8e8e93;flex-shrink:0;font-weight:500">งบ/เดือน ฿</label>
+          <input type="number" id="budget-in" value="15000" min="0" step="500" style="flex:1">
+        </div>
+        <button class="btn-pri" onclick="calcPlan()">📊 วิเคราะห์แผนปลดหนี้</button>
+      </div>
+      <div id="plan-result"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  API URL — บันทึกใน localStorage
+// ════════════════════════════════════════════════════
+let API_URL = localStorage.getItem('api_url') || '';
+
+function saveApiUrl(){
+  const url = document.getElementById('api-url-input').value.trim();
+  if(!url) return alert('กรุณาวาง URL ของ Apps Script');
+  localStorage.setItem('api_url', url);
+  API_URL = url;
+  document.getElementById('config-overlay').style.display = 'none';
+  loadAll();
+}
+
+// ════════════════════════════════════════════════════
+//  Fetch helpers
+// ════════════════════════════════════════════════════
+async function apiGet(action){
+  const res = await fetch(`${API_URL}?action=${action}`);
+  return res.json();
+}
+
+async function apiPost(action, data){
+  const res = await fetch(API_URL, {
+    method : 'POST',
+    headers: {'Content-Type':'application/json'},
+    body   : JSON.stringify({action, data}),
+  });
+  return res.json();
+}
+
+// ════════════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════════════
+let DATA = {accounts:[], bills:[], debts:[]};
+let editAccId=null, editBillId=null, strategy='avalanche';
+const TODAY    = new Date().getDate();
+const fmt      = n => Math.round(n).toLocaleString('th-TH');
+const daysLeft = d => { let x=d-TODAY; return x<0?x+30:x; };
+const catBg    = {'💳':'#E6F1FB','🏦':'#FAECE7','💧':'#E1F5EE','⚡':'#FAEEDA','📱':'#EEEDFE','🏠':'#FBEAF0','📦':'#F1EFE8'};
+const accTypeInfo = {
+  savings:{icon:'🏦',color:'#E6F1FB',label:'ออมทรัพย์'},
+  current:{icon:'💳',color:'#EEEDFE',label:'กระแสรายวัน'},
+  fd     :{icon:'📈',color:'#E1F5EE',label:'ฝากประจำ'},
+  cash   :{icon:'💵',color:'#FAEEDA',label:'เงินสด'},
+  invest :{icon:'📊',color:'#EAF3DE',label:'การลงทุน'},
+};
+
+function showSaved(){
+  const el=document.getElementById('save-ind');
+  el.style.display='flex';
+  setTimeout(()=>el.style.display='none',1800);
+}
+
+function getBadge(b){
+  const paid=b['สถานะ']==='จ่ายแล้ว', due=Number(b['วันครบกำหนด']);
+  if(paid) return'<span class="badge b-paid">จ่ายแล้ว</span>';
+  if(due<TODAY) return'<span class="badge b-over">เกินกำหนด</span>';
+  if(daysLeft(due)<=5) return`<span class="badge b-soon">ครบใน ${daysLeft(due)} วัน</span>`;
+  return`<span class="badge b-ok">วันที่ ${due}</span>`;
+}
+
+function billRowHTML(b, showEdit){
+  const cat=b['หมวดหมู่']||'📦', paid=b['สถานะ']==='จ่ายแล้ว', id=b['ID'];
+  return`<div class="row">
+    <div class="ico" style="background:${catBg[cat]||'#f2f2f7'}">${cat}</div>
+    <div class="rinfo">
+      <div class="rname">${b['ชื่อรายการ']}</div>
+      <div class="rsub">${b['หมายเหตุ']||'ทุกวันที่ '+b['วันครบกำหนด']} ${getBadge(b)}</div>
+    </div>
+    <div class="rright">
+      <div class="ramt">฿${fmt(b['ยอดเงิน'])}</div>
+      <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px">
+        ${showEdit?`<button class="rbtn" onclick="editBill(${id})">✏️</button>`:''}
+        <button class="rbtn${paid?' done':''}" onclick="togglePaid(${id})">${paid?'✓':'จ่าย'}</button>
+        ${showEdit?`<button class="rbtn" onclick="delBill(${id})" style="color:#FF3B30">🗑</button>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════
+//  Load
+// ════════════════════════════════════════════════════
+async function loadAll(){
+  try {
+    const data = await apiGet('getData');
+    if(!data.ok) throw new Error(data.error);
+    DATA.accounts = data.accounts || [];
+    DATA.bills    = data.bills    || [];
+    DATA.debts    = data.debts    || [];
+    renderAll();
+    document.getElementById('loading-card').style.display='none';
+    document.getElementById('overview-content').style.display='flex';
+  } catch(e){
+    document.getElementById('loading-card').innerHTML=`❌ โหลดไม่สำเร็จ: ${e.message}<br><br><button onclick="document.getElementById('config-overlay').style.display='flex'" style="padding:10px 20px;background:#007AFF;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer">ตั้งค่า URL ใหม่</button>`;
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  Render
+// ════════════════════════════════════════════════════
+function renderAll(){renderOverview();renderAccounts();renderBills();renderDebts();}
+
+function renderOverview(){
+  const totalAcc  = DATA.accounts.reduce((s,a)=>s+Number(a['ยอดเงิน']||0),0);
+  const totalDebt = DATA.debts.reduce((s,d)=>s+Number(d['ยอดหนี้']||0),0);
+  const totalBill = DATA.bills.reduce((s,b)=>s+Number(b['ยอดเงิน']||0),0);
+  const paid      = DATA.bills.filter(b=>b['สถานะ']==='จ่ายแล้ว').reduce((s,b)=>s+Number(b['ยอดเงิน']||0),0);
+  const remain    = totalBill-paid, net=totalAcc-totalDebt;
+  let alerts='';
+  const overdue=DATA.bills.filter(b=>b['สถานะ']!=='จ่ายแล้ว'&&Number(b['วันครบกำหนด'])<TODAY);
+  const soon=DATA.bills.filter(b=>b['สถานะ']!=='จ่ายแล้ว'&&Number(b['วันครบกำหนด'])>=TODAY&&daysLeft(Number(b['วันครบกำหนด']))<=5);
+  if(overdue.length) alerts+=`<div class="alert-box a-danger">❗ มี ${overdue.length} รายการเกินกำหนด!</div>`;
+  if(soon.length)    alerts+=`<div class="alert-box a-warn">🔔 ใกล้ครบ: ${soon.map(b=>b['ชื่อรายการ']).join(', ')}</div>`;
+  if(remain>0&&totalAcc>=remain) alerts+=`<div class="alert-box a-success">✅ เงินพอชำระบิลที่เหลือ ฿${fmt(remain)}</div>`;
+  if(remain>0&&totalAcc<remain)  alerts+=`<div class="alert-box a-warn">⚠️ เงินอาจไม่พอชำระบิล ฿${fmt(remain)}</div>`;
+  const upcoming=[...DATA.bills].filter(b=>b['สถานะ']!=='จ่ายแล้ว')
+    .sort((a,b)=>daysLeft(Number(a['วันครบกำหนด']))-daysLeft(Number(b['วันครบกำหนด']))).slice(0,3);
+  document.getElementById('overview-content').innerHTML=`
+    <div class="card"><div class="net-hero">
+      <div class="net-label">สินทรัพย์สุทธิ</div>
+      <div class="net-amount" style="color:${net>=0?'#34C759':'#FF3B30'}">฿${fmt(Math.abs(net))}</div>
+      <div class="net-sub">${net>=0?'สถานะดี — สินทรัพย์มากกว่าหนี้':'ควรเร่งปลดหนี้'}</div>
+    </div></div>
+    <div class="sg">
+      <div class="stat"><div class="sl">เงินในบัญชีรวม</div><div class="sv blue">฿${fmt(totalAcc)}</div></div>
+      <div class="stat"><div class="sl">หนี้รวมทั้งหมด</div><div class="sv red">฿${fmt(totalDebt)}</div></div>
+      <div class="stat"><div class="sl">บิล/เดือน</div><div class="sv">฿${fmt(totalBill)}</div></div>
+      <div class="stat"><div class="sl">บิลค้างชำระ</div><div class="sv orn">฿${fmt(remain)}</div></div>
+    </div>
+    ${alerts?`<div style="display:flex;flex-direction:column;gap:6px">${alerts}</div>`:''}
+    <div class="card"><div class="sec-t">บิลใกล้ครบกำหนด</div>
+      ${upcoming.length?upcoming.map(b=>billRowHTML(b,false)).join(''):'<div style="text-align:center;padding:16px;color:#8e8e93">จ่ายครบหมดแล้ว 🎉</div>'}
+    </div>`;
+}
+
+function renderAccounts(){
+  const total=DATA.accounts.reduce((s,a)=>s+Number(a['ยอดเงิน']||0),0);
+  document.getElementById('acc-total-top').textContent='฿'+fmt(total);
+  document.getElementById('acc-list').innerHTML=DATA.accounts.length?DATA.accounts.map(a=>{
+    const ti=accTypeInfo[a['ประเภท']]||accTypeInfo.savings;
+    const pct=total?Math.round(Number(a['ยอดเงิน'])/total*100):0;
+    return`<div class="acc-card">
+      <div class="acc-header">
+        <div class="acc-icon" style="background:${ti.color}">${ti.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a['ชื่อบัญชี']}</div>
+          <div style="font-size:12px;color:#8e8e93">${ti.label}${a['หมายเหตุ']?' · '+a['หมายเหตุ']:''}</div>
+        </div>
+      </div>
+      <div class="acc-bal">฿${fmt(a['ยอดเงิน'])}</div>
+      <div style="font-size:11px;color:#8e8e93;margin-top:2px">${pct}% ของยอดรวม</div>
+      <div class="pbar"><div class="pfill" style="width:${pct}%;background:#007AFF"></div></div>
+      <div class="acc-actions">
+        <button class="acc-btn" onclick="editAcc(${a['ID']})">✏️ แก้ไข</button>
+        <button class="acc-btn" onclick="delAcc(${a['ID']})" style="color:#FF3B30">🗑 ลบ</button>
+      </div>
+    </div>`;
+  }).join(''):'<div style="text-align:center;padding:20px;color:#8e8e93">ยังไม่มีบัญชี</div>';
+}
+
+function renderBills(){
+  document.getElementById('bills-list').innerHTML=DATA.bills.length
+    ?DATA.bills.map(b=>billRowHTML(b,true)).join('')
+    :'<div style="text-align:center;padding:20px;color:#8e8e93">ยังไม่มีบิล</div>';
+}
+
+function renderDebts(){
+  document.getElementById('debt-list').innerHTML=DATA.debts.map((d,i)=>`
+    <div class="debt-row">
+      <input type="text" value="${d['ชื่อหนี้']||''}" placeholder="ชื่อหนี้" onchange="DATA.debts[${i}]['ชื่อหนี้']=this.value;updateDebtSummary()">
+      <input type="number" value="${d['ยอดหนี้']||0}" min="0" step="1000" onchange="DATA.debts[${i}]['ยอดหนี้']=+this.value;updateDebtSummary()">
+      <input type="number" value="${d['ดอกเบี้ย (%/ปี)']||0}" min="0" max="100" step="0.1" onchange="DATA.debts[${i}]['ดอกเบี้ย (%/ปี)']=+this.value;updateDebtSummary()">
+      <button onclick="delDebt(${d['ID']||0})" style="background:none;border:none;cursor:pointer;color:#FF3B30;font-size:16px">🗑</button>
+    </div>`).join('');
+  updateDebtSummary();
+}
+
+function updateDebtSummary(){
+  const total=DATA.debts.reduce((s,d)=>s+Number(d['ยอดหนี้']||0),0);
+  const interest=DATA.debts.reduce((s,d)=>s+Number(d['ยอดหนี้']||0)*Number(d['ดอกเบี้ย (%/ปี)']||0)/100/12,0);
+  document.getElementById('dt-total').textContent='฿'+fmt(total);
+  document.getElementById('dt-int').textContent='฿'+fmt(interest);
+}
+
+// ════════════════════════════════════════════════════
+//  Navigation
+// ════════════════════════════════════════════════════
+function goPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('main-content').scrollTop=0;
+}
+
+// ════════════════════════════════════════════════════
+//  Account CRUD
+// ════════════════════════════════════════════════════
+function openAccForm(){editAccId=null;document.getElementById('acc-form-title').textContent='เพิ่มบัญชี';['af-name','af-note'].forEach(i=>document.getElementById(i).value='');document.getElementById('af-bal').value='';document.getElementById('af-type').value='savings';document.getElementById('acc-form-wrap').style.display='block';}
+function closeAccForm(){document.getElementById('acc-form-wrap').style.display='none';editAccId=null;}
+function editAcc(id){
+  const a=DATA.accounts.find(x=>x['ID']==id);if(!a)return;
+  editAccId=id;document.getElementById('acc-form-title').textContent='แก้ไขบัญชี';
+  document.getElementById('af-name').value=a['ชื่อบัญชี'];
+  document.getElementById('af-type').value=a['ประเภท']||'savings';
+  document.getElementById('af-bal').value=a['ยอดเงิน'];
+  document.getElementById('af-note').value=a['หมายเหตุ']||'';
+  document.getElementById('acc-form-wrap').style.display='block';
+}
+async function saveAcc(){
+  const name=document.getElementById('af-name').value.trim();
+  if(!name) return alert('กรุณากรอกชื่อบัญชี');
+  const btn=document.getElementById('acc-save-btn');
+  btn.disabled=true;btn.textContent='กำลังบันทึก...';
+  try{
+    await apiPost('saveAccount',{id:editAccId||null,name,type:document.getElementById('af-type').value,balance:+document.getElementById('af-bal').value||0,note:document.getElementById('af-note').value.trim()});
+    closeAccForm();showSaved();await loadAll();
+  }catch(e){alert('ผิดพลาด: '+e.message);}
+  btn.disabled=false;btn.textContent='บันทึก';
+}
+async function delAcc(id){if(!confirm('ลบบัญชีนี้?'))return;await apiPost('deleteAccount',{id});showSaved();loadAll();}
+
+// ════════════════════════════════════════════════════
+//  Bill CRUD
+// ════════════════════════════════════════════════════
+function openBillForm(){editBillId=null;document.getElementById('bill-form-title').textContent='เพิ่มบิล';['bf-name','bf-note'].forEach(i=>document.getElementById(i).value='');document.getElementById('bf-amt').value='';document.getElementById('bf-due').value='';document.getElementById('bf-cat').value='💳';document.getElementById('bill-form-wrap').style.display='block';}
+function closeBillForm(){document.getElementById('bill-form-wrap').style.display='none';editBillId=null;}
+function editBill(id){
+  const b=DATA.bills.find(x=>x['ID']==id);if(!b)return;
+  editBillId=id;document.getElementById('bill-form-title').textContent='แก้ไขบิล';
+  document.getElementById('bf-name').value=b['ชื่อรายการ'];
+  document.getElementById('bf-cat').value=b['หมวดหมู่']||'💳';
+  document.getElementById('bf-amt').value=b['ยอดเงิน'];
+  document.getElementById('bf-due').value=b['วันครบกำหนด'];
+  document.getElementById('bf-note').value=b['หมายเหตุ']||'';
+  document.getElementById('bill-form-wrap').style.display='block';
+}
+async function saveBill(){
+  const name=document.getElementById('bf-name').value.trim();
+  const amount=+document.getElementById('bf-amt').value;
+  const dueday=+document.getElementById('bf-due').value;
+  if(!name||!amount||!dueday) return alert('กรุณากรอกข้อมูลให้ครบ');
+  const btn=document.getElementById('bill-save-btn');
+  btn.disabled=true;btn.textContent='กำลังบันทึก...';
+  const cur=editBillId?DATA.bills.find(x=>x['ID']==editBillId):null;
+  try{
+    await apiPost('saveBill',{id:editBillId||null,name,cat:document.getElementById('bf-cat').value,amount,dueday,note:document.getElementById('bf-note').value.trim(),paid:cur?cur['สถานะ']==='จ่ายแล้ว':false});
+    closeBillForm();showSaved();await loadAll();
+  }catch(e){alert('ผิดพลาด: '+e.message);}
+  btn.disabled=false;btn.textContent='บันทึก';
+}
+async function delBill(id){if(!confirm('ลบบิลนี้?'))return;await apiPost('deleteBill',{id});showSaved();loadAll();}
+async function togglePaid(id){await apiPost('toggleBillPaid',{id});showSaved();loadAll();}
+
+// ════════════════════════════════════════════════════
+//  Debt CRUD
+// ════════════════════════════════════════════════════
+function addDebt(){DATA.debts.push({'ID':null,'ชื่อหนี้':'','ยอดหนี้':0,'ดอกเบี้ย (%/ปี)':0});renderDebts();}
+async function delDebt(id){
+  if(id){if(!confirm('ลบหนี้นี้?'))return;await apiPost('deleteDebt',{id});showSaved();loadAll();}
+  else{DATA.debts=DATA.debts.filter(d=>d['ID']!==null||d['ชื่อหนี้']);renderDebts();}
+}
+async function saveAllDebts(){
+  const btn=document.querySelector('#page-debts .btn-pri');
+  btn.disabled=true;btn.textContent='กำลังบันทึก...';
+  const debts=DATA.debts.filter(d=>d['ชื่อหนี้']);
+  if(!debts.length){btn.disabled=false;btn.textContent='💾 บันทึกหนี้ทั้งหมด';return;}
+  try{
+    await Promise.all(debts.map(d=>apiPost('saveDebt',{id:d['ID']||null,name:d['ชื่อหนี้'],balance:Number(d['ยอดหนี้'])||0,rate:Number(d['ดอกเบี้ย (%/ปี)'])||0})));
+    showSaved();await loadAll();
+  }catch(e){alert('ผิดพลาด: '+e.message);}
+  btn.disabled=false;btn.textContent='💾 บันทึกหนี้ทั้งหมด';
+}
+
+// ════════════════════════════════════════════════════
+//  Plan
+// ════════════════════════════════════════════════════
+function setStrat(s){strategy=s;document.getElementById('stab-av').classList.toggle('active',s==='avalanche');document.getElementById('stab-sn').classList.toggle('active',s==='snowball');}
+
+function simulate(dList,budget,strat){
+  let ds=dList.map(d=>({rem:Number(d['ยอดหนี้'])||0,rate:Number(d['ดอกเบี้ย (%/ปี)'])||0}));
+  let months=0,totalInt=0;
+  while(ds.some(d=>d.rem>0)&&months<360){
+    months++;
+    ds.forEach(d=>{if(d.rem<=0)return;const i=d.rem*(d.rate/100/12);totalInt+=i;d.rem+=i;});
+    let left=budget;
+    const active=ds.filter(d=>d.rem>0);
+    if(strat==='avalanche')active.sort((a,b)=>b.rate-a.rate);else active.sort((a,b)=>a.rem-b.rem);
+    active.forEach(d=>{const pay=Math.min(d.rem*0.02+50,d.rem,left);d.rem=Math.max(0,d.rem-pay);left-=pay;});
+    if(left>0){const t=active.find(d=>d.rem>0);if(t){const pay=Math.min(left,t.rem);t.rem=Math.max(0,t.rem-pay);}}
+  }
+  return{months,totalInt};
+}
+
+function calcPlan(){
+  const budget=+document.getElementById('budget-in').value;
+  const debts=DATA.debts.filter(d=>Number(d['ยอดหนี้'])>0);
+  if(!debts.length) return alert('กรุณาเพิ่มรายการหนี้ก่อน');
+  const res=simulate(debts,budget,strategy);
+  const alt=simulate(debts,budget,strategy==='avalanche'?'snowball':'avalanche');
+  const saving=Math.max(0,alt.totalInt-res.totalInt);
+  const saveMo=Math.max(0,alt.months-res.months);
+  const sorted=[...debts].sort((a,b)=>strategy==='avalanche'?Number(b['ดอกเบี้ย (%/ปี)'])-Number(a['ดอกเบี้ย (%/ปี)']):Number(a['ยอดหนี้'])-Number(b['ยอดหนี้']));
+  const maxBal=Math.max(...debts.map(d=>Number(d['ยอดหนี้'])));
+  const tip=strategy==='avalanche'?'Avalanche ประหยัดดอกเบี้ยได้มากที่สุด':'Snowball สร้างแรงจูงใจ ปลดทีละก้อน';
+  document.getElementById('plan-result').innerHTML=`
+    <div class="sg">
+      <div class="stat"><div class="sl">ปลดหนี้ใน</div><div class="sv orn">${res.months} เดือน<br><span style="font-size:11px;font-weight:400">${Math.floor(res.months/12)} ปี ${res.months%12} ด.</span></div></div>
+      <div class="stat"><div class="sl">ดอกเบี้ยรวม</div><div class="sv red">฿${fmt(res.totalInt)}</div></div>
+      <div class="stat"><div class="sl">ประหยัดได้</div><div class="sv grn">${saving>0?'฿'+fmt(saving):'-'}</div></div>
+      <div class="stat"><div class="sl">เร็วกว่า</div><div class="sv grn">${saveMo>0?saveMo+' เดือน':'-'}</div></div>
+    </div>
+    <div class="alert-box a-info">💡 ${tip}</div>
+    <div class="card"><div class="sec-t" style="margin-bottom:8px">ลำดับที่ควรชำระ</div>
+      ${sorted.map((d,i)=>`<div class="plan-order">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="width:22px;height:22px;border-radius:50%;background:#E6F3FF;color:#0056b3;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
+          <div style="font-size:14px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d['ชื่อหนี้']}</div>
+          <span style="font-size:11px;color:#C0392B;background:#FFE5E5;padding:3px 8px;border-radius:20px;font-weight:600">${d['ดอกเบี้ย (%/ปี)']}%/ปี</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><div style="font-size:11px;color:#8e8e93;font-weight:500">ยอดหนี้</div><div style="font-size:13px;font-weight:700">฿${fmt(d['ยอดหนี้'])}</div></div>
+          <div><div style="font-size:11px;color:#8e8e93;font-weight:500">ดอกเบี้ย/เดือน</div><div style="font-size:13px;font-weight:700;color:#FF3B30">฿${fmt(Number(d['ยอดหนี้'])*Number(d['ดอกเบี้ย (%/ปี)'])/100/12)}</div></div>
+        </div>
+        <div class="pbar" style="margin-top:8px"><div class="pfill" style="width:${Math.round(Number(d['ยอดหนี้'])/maxBal*100)}%;background:#FF3B30"></div></div>
+      </div>`).join('')}
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════
+//  Init
+// ════════════════════════════════════════════════════
+const now=new Date();
+const thM=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+document.getElementById('month-lbl').textContent=thM[now.getMonth()]+' '+(now.getFullYear()+543);
+
+if(API_URL){
+  document.getElementById('config-overlay').style.display='none';
+  loadAll();
+}
+</script>
+</body>
+</html>
