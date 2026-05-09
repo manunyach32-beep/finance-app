@@ -257,16 +257,13 @@ function saveApiUrl(){
 //  Fetch helpers
 // ════════════════════════════════════════════════════
 async function apiGet(action){
-  const res = await fetch(`${API_URL}?action=${action}`);
+  const res = await fetch(`${API_URL}?action=${action}`, {redirect:'follow'});
   return res.json();
 }
 
 async function apiPost(action, data){
-  const res = await fetch(API_URL, {
-    method : 'POST',
-    headers: {'Content-Type':'application/json'},
-    body   : JSON.stringify({action, data}),
-  });
+  const encoded = encodeURIComponent(JSON.stringify(data));
+  const res = await fetch(`${API_URL}?action=${action}&data=${encoded}`, {redirect:'follow'});
   return res.json();
 }
 
