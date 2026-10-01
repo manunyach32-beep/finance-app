@@ -129,7 +129,7 @@ input:focus,select:focus{outline:none;border-color:#007AFF;box-shadow:0 0 0 3px 
     <div class="tabbar">
       <button class="tb active" onclick="goPage('overview',this)"><span class="tbi">🏠</span>ภาพรวม</button>
       <button class="tb" onclick="goPage('debts',this)"><span class="tbi">💳</span>หนี้ (21)</button>
-      <button class="tb" onclick="goPage('bills',this)"><span class="tbi">📄</span>บิลประจำ</button>
+      <button class="tb" onclick="goPage('bills',this)"><span class="tbi">📄</span>บิลประจำ<span id="bill-badge" style="background:#FF3B30;color:#fff;border-radius:10px;font-size:9px;padding:1px 5px;display:none;font-weight:700">0</span></button>
       <button class="tb" onclick="goPage('accounts',this)"><span class="tbi">🏦</span>บัญชี</button>
       <button class="tb" onclick="goPage('plan',this)"><span class="tbi">📊</span>แผนปลดหนี้</button>
     </div>
@@ -388,6 +388,8 @@ async function loadAll(){
 // ════════════════════════════════════════════════════
 function renderAll(){renderOverview();renderAccounts();renderBills();renderDebts();}
 
+let billFilter = 'all';
+
 function renderOverview(){
   const totalAcc  = DATA.accounts.reduce((s,a)=>s+Number(a['ยอดเงิน']||0),0);
   const totalDebt = DATA.debts.reduce((s,d)=>s+Number(d['ยอดหนี้']||0),0);
@@ -395,31 +397,111 @@ function renderOverview(){
   const paid      = DATA.bills.filter(b=>b['สถานะ']==='จ่ายแล้ว').reduce((s,b)=>s+Number(b['ยอดเงิน']||0),0);
   const remain    = totalBill-paid, net=totalAcc-totalDebt;
 
-  let alerts='';
-  const overdue=DATA.bills.filter(b=>b['สถานะ']!=='จ่ายแล้ว'&&Number(b['วันครบกำหนด'])<TODAY);
-  const soon=DATA.bills.filter(b=>b['สถานะ']!=='จ่ายแล้ว'&&Number(b['วันครบกำหนด'])>=TODAY&&daysLeft(Number(b['วันครบกำหนด']))<=5);
-  
-  if(overdue.length) alerts+=`<div class="alert-box a-danger">❗ มี ${overdue.length} รายการเลยกำหนดชำระ</div>`;
-  if(soon.length)    alerts+=`<div class="alert-box a-warn">🔔 ใกล้ครบกำหนด: ${soon.map(b=>b['ชื่อรายการ']).join(', ')}</div>`;
-  if(remain>0&&totalAcc>=remain) alerts+=`<div class="alert-box a-success">✅ มีเงินพร้อมชำระบิลคงค้าง ฿${fmt(remain)}</div>`;
-  if(remain>0&&totalAcc<remain)  alerts+=`<div class="alert-box a-warn">⚠️ สำรองเงินสดสำหรับค่ากินอยู่ก่อนชำระหนี้อื่น</div>`;
+  // 1. บิลที่ต้องจ่ายวันนี้ (Today)
+  const dueToday = DATA.bills.filter(b=>b['สถานะ']!=='จ่ายแล้ว' && Number(b['วันครบกำหนด'])===TODAY);
+  const totalDueToday = dueToday.reduce((s,b)=>s+Number(b['ยอดเงิน']||0), 0);
+
+  // 2. บิลที่เลยกำหนด (Overdue)
+  const overdue = DATA.bills.filter(b=>b['สถานะ']!=='จ่ายแล้ว' && Number(b['วันครบกำหนด'])<TODAY);
+  const totalOverdue = overdue.reduce((s,b)=>s+Number(b['ยอดเงิน']||0), 0);
+
+  // 3. บิลที่ต้องเตรียมเงินล่วงหน้าในอีก 1-3 วัน (Due in 1-3 days)
+  const dueSoon = DATA.bills.filter(b=>{
+    if (b['สถานะ']==='จ่ายแล้ว') return false;
+    const due = Number(b['วันครบกำหนด']);
+    let diff = due - TODAY;
+    if (diff < 0) diff += 30;
+    return diff > 0 && diff <= 3;
+  }).sort((a,b)=>daysLeft(Number(a['วันครบกำหนด'])) - daysLeft(Number(b['วันครบกำหนด'])));
+  const totalDueSoon = dueSoon.reduce((s,b)=>s+Number(b['ยอดเงิน']||0), 0);
+
+  // อัปเดตตัวเลขแจ้งเตือนสีแดงบนแท็บบิล (Badge)
+  const urgentCount = dueToday.length + overdue.length;
+  const badgeEl = document.getElementById('bill-badge');
+  if (badgeEl) {
+    if (urgentCount > 0) {
+      badgeEl.textContent = urgentCount;
+      badgeEl.style.display = 'inline-block';
+    } else {
+      badgeEl.style.display = 'none';
+    }
+  }
+
+  // สร้างกล่องแจ้งเตือนอัจฉริยะ (In-App Notification Center)
+  let notifHTML = '';
+
+  if (dueToday.length > 0) {
+    notifHTML += `
+    <div class="card" style="border: 1.5px solid #FF3B30; background: #FFF5F5;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:700;color:#C0392B;display:flex;align-items:center;gap:6px">
+          <span>🚨</span> ต้องชำระวันนี้ (${TODAY} ${thM[now.getMonth()]})
+        </div>
+        <div style="font-size:15px;font-weight:800;color:#C0392B">รวม ฿${fmt(totalDueToday)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${dueToday.map(b=>billRowHTML(b,false)).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (overdue.length > 0) {
+    notifHTML += `
+    <div class="card" style="border: 1px solid #FF9500; background: #FFFDF5;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:#B7770D">
+          ❗ มี ${overdue.length} รายการเลยกำหนดชำระ
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#B7770D">฿${fmt(totalOverdue)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${overdue.map(b=>billRowHTML(b,false)).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (dueSoon.length > 0) {
+    notifHTML += `
+    <div class="card" style="border: 1px solid #007AFF; background: #F5FAFF;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:#0056b3;display:flex;align-items:center;gap:6px">
+          <span>⏳</span> ต้องเตรียมเงินในอีก 1-3 วันนี้
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#0056b3">เตรียม ฿${fmt(totalDueSoon)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${dueSoon.map(b=>billRowHTML(b,false)).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (dueToday.length === 0 && overdue.length === 0 && dueSoon.length === 0) {
+    notifHTML += `
+    <div class="alert-box a-success">
+      ✅ วันนี้และในอีก 3 วันข้างหน้า ไม่มีบิลที่ต้องจ่ายค่ะ สบายใจได้
+    </div>`;
+  }
 
   const upcoming=[...DATA.bills].filter(b=>b['สถานะ']!=='จ่ายแล้ว')
     .sort((a,b)=>daysLeft(Number(a['วันครบกำหนด']))-daysLeft(Number(b['วันครบกำหนด']))).slice(0,4);
 
   document.getElementById('overview-content').innerHTML=`
+    <!-- แจ้งเตือนยอดที่ต้องจ่ายวันนี้ & ล่วงหน้า -->
+    ${notifHTML}
+
     <div class="card"><div class="net-hero">
       <div class="net-label">หนี้คงค้างสุทธิทั้งหมด</div>
       <div class="net-amount" style="color:#FF3B30">฿${fmt(totalDebt)}</div>
       <div class="net-sub">กำลังดำเนินการตามยุทธศาสตร์รอดพ้นวิกฤต</div>
     </div></div>
+
     <div class="sg">
       <div class="stat"><div class="sl">รายรับ/เงินเข้าเดือนนี้</div><div class="sv blue">฿${fmt(totalAcc)}</div></div>
       <div class="stat"><div class="sl">บิลจำเป็นต้องจ่าย</div><div class="sv orn">฿${fmt(remain)}</div></div>
       <div class="stat"><div class="sl">บิลรวมต่อเดือน</div><div class="sv">฿${fmt(totalBill)}</div></div>
       <div class="stat"><div class="sl">ชำระแล้วเดือนนี้</div><div class="sv grn">฿${fmt(paid)}</div></div>
     </div>
-    ${alerts?`<div style="display:flex;flex-direction:column;gap:6px">${alerts}</div>`:''}
+
     <div class="card"><div class="sec-t">บิลสำคัญที่ต้องจ่ายถัดไป</div>
       ${upcoming.length?upcoming.map(b=>billRowHTML(b,false)).join(''):'<div style="text-align:center;padding:16px;color:#8e8e93">จ่ายครบถ้วนแล้ว 🎉</div>'}
     </div>`;
@@ -450,12 +532,24 @@ function renderAccounts(){
   }).join(''):'<div style="text-align:center;padding:20px;color:#8e8e93">ยังไม่มีบัญชี</div>';
 }
 
+function setBillFilter(f, btn){
+  billFilter = f;
+  document.querySelectorAll('.b-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderBills();
+}
+
 function renderBills(){
   const total=DATA.bills.reduce((s,b)=>s+Number(b['ยอดเงิน']||0),0);
   document.getElementById('bill-total-top').textContent='฿'+fmt(total);
-  document.getElementById('bills-list').innerHTML=DATA.bills.length
-    ?DATA.bills.map(b=>billRowHTML(b,true)).join('')
-    :'<div style="text-align:center;padding:20px;color:#8e8e93">ยังไม่มีบิล</div>';
+  
+  let list = [...DATA.bills];
+  if (billFilter === 'unpaid') list = list.filter(b=>b['สถานะ']!=='จ่ายแล้ว');
+  if (billFilter === 'paid') list = list.filter(b=>b['สถานะ']==='จ่ายแล้ว');
+
+  document.getElementById('bills-list').innerHTML=list.length
+    ?list.map(b=>billRowHTML(b,true)).join('')
+    :`<div style="text-align:center;padding:20px;color:#8e8e93">${billFilter==='unpaid'?'ไม่มีบิลค้างชำระ 🎉':'ยังไม่มีบิล'}</div>`;
 }
 
 function renderDebts(){
